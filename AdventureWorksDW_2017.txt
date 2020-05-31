@@ -1,0 +1,203 @@
+--------Q1 What are the sales, product costs, profit, number of orders & quantity ordered for internet sales by product category and ranked by sales?--------------
+Select DPC.EnglishProductCategoryName As Category, Sum(FIS.UnitPrice*FIS.OrderQuantity) As Sales, Sum(FIS.TotalProductCost) As ProductCost, Sum(FIS.SalesAmount - FIS.TotalProductCost) As Profit, Count(FIS.SalesOrderNumber) AS NoOfOrders, Sum(FIS.OrderQuantity) AS QuantityOrdered
+from          dbo.FactInternetSales FIS Join
+              dbo.DimProduct DP on FIS.ProductKey = DP.ProductKey Join
+              dbo.DimProductSubcategory DPSc on DP.ProductSubcategoryKey = DPSc.ProductSubcategoryKey Join
+              dbo.DimProductCategory DPC on DPsc.ProductCategoryKey = DPC.ProductCategoryKey
+Group by DPC.EnglishProductCategoryName
+Order by Sum(FIS.UnitPrice*FIS.OrderQuantity) Desc
+
+------------Q2DW What are the sales, product costs, profit, number of orders & quantity ordered for reseller sales by product category and ranked by sales?----------------
+select pc.EnglishProductCategoryName as Categories,SUM(rs.salesAmount) as SALES, SUM(rs.totalProductCost) as ProductCost, SUM (rs.salesAmount - rs.TotalProductCost) as Profits, COUNT(rs.salesordernumber) as NoofORders, SUM(rs.orderQuantity) as QuantityOrdered
+from FactResellerSales rs join DimProduct dp on rs.ProductKey = dp.ProductKey join
+DimProductSubcategory sc on dp.ProductSubcategoryKey = sc.ProductSubcategoryKey join
+DimProductCategory pc on pc.ProductCategoryKey = sc.ProductCategoryKey
+group by pc.EnglishProductCategoryName
+order by SALES desc;
+
+-----------Q3 What are the sales, product costs, profit, number of orders & quantity ordered for both internet & reseller sales by product category and ranked by sales?-------------------------
+Select B.EnglishProductCategoryName, (IsNull(A.TotalInternetSales,0)+B.TotalResellerSales) AS TotalSales ,  (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProductCost, (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProfit,  
+(IsNull(TIOrders,0)+TROrders) AS TotalOrders, (IsNull(TIQuantity,0)+TRQuantity) AS TotalQuantity
+from
+(Select pc.EnglishProductCategoryName, SUM(FIS.SalesAmount) as TotalInternetSales, SUM(FIS.TotalProductCost) AS TIProductCoast, SUM(FIS.SalesAmount - FIS.TotalProductCost) AS TIProfit,
+        Count(FIS.SalesOrderNumber) AS TIOrders, SUM(FIS.OrderQuantity) AS TIQuantity
+from        dbo.FactInternetSales FIS join
+            dbo.DimProduct DP on FIS.ProductKey = DP.ProductKey join
+            DimProductSubcategory sc on DP.ProductSubcategoryKey = sc.ProductSubcategoryKey join
+            DimProductCategory pc on pc.ProductCategoryKey = sc.ProductCategoryKey
+group by pc.EnglishProductCategoryName
+ ) AS A
+
+
+  Right JOIN
+
+
+(Select pc.EnglishProductCategoryName, SUM(FRS.SalesAmount) as TotalResellerSales, SUM(FRS.TotalProductCost) AS TRProductCoast, SUM(FRS.SalesAmount - FRS.TotalProductCost) AS TRProfit,
+        Count(FRS.SalesOrderNumber) AS TROrders, SUM(FRS.OrderQuantity) AS TRQuantity
+from        dbo.FactResellerSales FRS join
+            dbo.DimProduct DP on FRS.ProductKey = DP.ProductKey join
+            DimProductSubcategory sc on DP.ProductSubcategoryKey = sc.ProductSubcategoryKey join
+            DimProductCategory pc on pc.ProductCategoryKey = sc.ProductCategoryKey
+group by pc.EnglishProductCategoryName) AS B
+on A.EnglishProductCategoryName = B.EnglishProductCategoryName
+
+
+--------------DWQ4 What are the sales, product costs, profit, number of orders & quantity ordered for product category Accessories broken-down by Product Hierarchy (Category, Subcategory, Model & Product) for both internet & reseller sales?-----------------------
+Select B.EnglishProductCategoryName, B.EnglishProductSubcategoryName, B.ModelName, B.EnglishProductName, (IsNull(A.TotalInternetSales,0)+B.TotalResellerSales) AS TotalSales ,  (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProductCost, (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProfit,  
+(IsNull(TIOrders,0)+TROrders) AS TotalOrders, (IsNull(TIQuantity,0)+TRQuantity) AS TotalQuantity
+from
+(Select pc.EnglishProductCategoryName,sc.EnglishProductSubcategoryName, DP.ModelName, DP.EnglishProductName, SUM(FIS.SalesAmount) as TotalInternetSales, SUM(FIS.TotalProductCost) AS TIProductCoast, SUM(FIS.SalesAmount - FIS.TotalProductCost) AS TIProfit,
+        Count(FIS.SalesOrderNumber) AS TIOrders, SUM(FIS.OrderQuantity) AS TIQuantity
+from        dbo.FactInternetSales FIS join
+            dbo.DimProduct DP on FIS.ProductKey = DP.ProductKey join
+            DimProductSubcategory sc on DP.ProductSubcategoryKey = sc.ProductSubcategoryKey join
+            DimProductCategory pc on pc.ProductCategoryKey = sc.ProductCategoryKey
+group by pc.EnglishProductCategoryName,sc.EnglishProductSubcategoryName, DP.ModelName, DP.EnglishProductName) 
+AS A
+
+
+Right JOIN
+
+
+(Select pc.EnglishProductCategoryName,sc.EnglishProductSubcategoryName, DP.ModelName, DP.EnglishProductName, SUM(FRS.SalesAmount) as TotalResellerSales, SUM(FRS.TotalProductCost) AS TRProductCoast, SUM(FRS.SalesAmount - FRS.TotalProductCost) AS TRProfit,
+        Count(FRS.SalesOrderNumber) AS TROrders, SUM(FRS.OrderQuantity) AS TRQuantity
+from        dbo.FactResellerSales FRS join
+            dbo.DimProduct DP on FRS.ProductKey = DP.ProductKey join
+            DimProductSubcategory sc on DP.ProductSubcategoryKey = sc.ProductSubcategoryKey join
+            DimProductCategory pc on pc.ProductCategoryKey = sc.ProductCategoryKey
+group by pc.EnglishProductCategoryName,sc.EnglishProductSubcategoryName, DP.ModelName, DP.EnglishProductName) 
+AS B
+on A.EnglishProductCategoryName = B.EnglishProductCategoryName
+group by B.EnglishProductCategoryName, B.EnglishProductSubcategoryName, B.ModelName, B.EnglishProductName, TotalInternetSales, TotalResellerSales,TIProductCoast,TRProductCoast,TIOrders,TROrders, TIQuantity, TRQuantity
+order by B.EnglishProductCategoryName, B.EnglishProductSubcategoryName, B.ModelName, B.EnglishProductName, TotalInternetSales, TotalResellerSales,TIProductCoast,TRProductCoast,TIOrders,TROrders, TIQuantity, TRQuantity
+
+
+-----------Q5 What are the sales, product costs, profit, number of orders & quantity ordered for both internet & reseller sales by country and ranked by sales?---------------
+select dg.englishCountryregionname as Countries,(SUM(rs.salesAmount) + sum([is].SalesAmount)) as Sales,
+(SUM(rs.totalProductCost) + SUM([is].TotalProductCost)) as ProductCost,
+(SUM (rs.salesAmount - rs.TotalProductCost) + SUM([is].SalesAmount - [is].TotalProductCost))as Profits,
+(COUNT(rs.salesordernumber) + COUNT([is].SalesOrderNumber)) as NoofORders,
+SUM(rs.orderQuantity) + SUM([is].OrderQuantity) as QuantityOrdered
+from
+DimGeography dg join DimSalesTerritory st on dg.SalesTerritoryKey = st.SalesTerritoryKey join
+FactInternetSales [is] on [is].SalesTerritoryKey = st.SalesTerritoryKey join
+FactResellerSales rs on rs.CurrencyKey= [is].CurrencyKey
+group by dg.EnglishCountryRegionName
+order by SALES desc;
+
+
+---------------Q6 What are the sales, product costs, profit, number of orders & quantity ordered for France by city and ranked by sales for both internet & reseller sales?----------------------
+
+Select A.City, (IsNull(TotalInternetSales,0)+TotalResellerSales) AS TotalSales ,  (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProductCost, (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProfit,  
+(IsNull(TIOrders,0)+TROrders) AS TotalOrders, (IsNull(TIQuantity,0)+TRQuantity) AS TotalQuantity
+from
+(Select DG.City As City , SUM(FIS.SalesAmount) as TotalInternetSales, SUM(FIS.TotalProductCost) AS TIProductCoast, SUM(FIS.SalesAmount - FIS.TotalProductCost) AS TIProfit, 
+        Count(FIS.SalesOrderNumber) AS TIOrders, SUM(FIS.OrderQuantity) AS TIQuantity
+from        dbo.FactInternetSales FIS join
+            dbo.DimCustomer DC on FIS.CustomerKey = DC.CustomerKey Join
+            dbo.DimGeography DG on DC.GeographyKey = DG.GeographyKey
+where DG.EnglishCountryRegionName = 'France'
+group by DG.City
+ ) AS A
+  Right JOIN
+
+ 
+
+(Select DG.City As City,  SUM(FRS.SalesAmount) as TotalResellerSales, SUM(FRS.TotalProductCost) AS TRProductCoast, SUM(FRS.SalesAmount - FRS.TotalProductCost) AS TRProfit, 
+        Count(FRS.SalesOrderNumber) AS TROrders, SUM(FRS.OrderQuantity) AS TRQuantity
+from        dbo.FactResellerSales FRS join
+            dbo.DimReseller DR on FRS.ResellerKey = DR.ResellerKey Join
+            dbo.DimGeography DG on DR.GeographyKey = DG.GeographyKey
+where DG.EnglishCountryRegionName = 'France'
+group by DG.City
+) AS B
+on A.City = B.City
+order by TotalSales Desc
+ 
+
+-------------Q7 What are the top ten resellers by reseller hierarchy (business type, reseller name) ranked by sales?-----------------    
+Select Top 10 DR.BusinessType As BusinessType, DR.ResellerName As ResellerName, Sum(FRS.UnitPrice*FRS.OrderQuantity) As Sales from dbo.FactResellerSales FRS Join
+              dbo.DimReseller DR on FRS.ResellerKey    = DR.ResellerKey
+Group by DR.BusinessType, DR.ResellerName
+Order by Sum(FRS.UnitPrice*FRS.OrderQuantity) Desc
+
+
+-------------------DWQ8 What are the top ten (internet) customers ranked by sales?-----------------
+select top 10 (dc.firstname+ SPACE(1) +dc.LastName) as [Names], SUM(fis.salesAmount) as Sales  from DimCustomer dc join FactInternetSales fis on dc.CustomerKey = fis.CustomerKey
+group by dc.FirstName,dc.LastName
+order by Sales desc;
+
+----------------Q9 What are the sales, product costs, profit, number of orders & quantity ordered by Customer Occupation?-----------------------
+Select DC.EnglishOccupation,SUM(FIS.SalesAmount) as Sales , SUM(FIS.TotalProductCost) AS ProductCost, SUM(FIS.SalesAmount-FIS.TotalProductCost) AS Profit, COUNT(SalesOrderNumber) AS NumberOfOrders, Sum(FIS.OrderQuantity) AS Quantity
+from FactInternetSales FIS join
+    DimCustomer DC on FIS.CustomerKey = DC.CustomerKey
+   
+group by DC.EnglishOccupation
+order by  Sales
+ 
+
+
+-------------------Q10 What are the ranked sales of the sales people (employees)?--------------------------
+    Select DE.EmployeeKey, DE.FirstName, DE.LastName, Sum(FRS.SalesAmount) As Sales
+from dbo.FactResellerSales FRS Join
+              dbo.DimEmployee DE on FRS.EmployeeKey = DE.EmployeeKey
+group by DE.EmployeeKey, DE.FirstName, DE.LastName
+Order by Sum(FRS.SalesAmount) Desc
+
+
+----------------DWQ11 What are the sales, discount amounts (promotion discounts), profit and promotion % of sales for Reseller Sales by Promotion Hierarchy (Category, Type & Name) – sorted descending by sales.?------------------
+select dp.EnglishPromotionCategory as PromotionCategory, dp.EnglishPromotionType as PromotionType, dp.EnglishPromotionName as PromotionName,
+SUM(frs.salesAmount) as Sales from FactResellerSales frs join DimPromotion dp on frs.PromotionKey = dp.PromotionKey
+group by dp.EnglishPromotionCategory, dp.EnglishPromotionType, dp.EnglishPromotionName
+order by dp.EnglishPromotionCategory, dp.EnglishPromotionType, dp.EnglishPromotionName,Sales desc;
+
+--------------DWQ12 What are the sales, product costs, profit, number of orders & quantity ordered by Sales Territory Hierarchy (Group, Country, region) and ranked by sales for both internet & reseller sales?-----------------------
+Select B.SalesTerritoryGroup, B.SalesTerritoryCountry, B.SalesTerritoryRegion, (IsNull(A.TotalInternetSales,0)+B.TotalResellerSales) AS TotalSales ,  (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProductCost, (IsNull(TIProductCoast,0)+ TRProductCoast) AS TotalProfit,  
+(IsNull(TIOrders,0)+TROrders) AS TotalOrders, (IsNull(TIQuantity,0)+TRQuantity) AS TotalQuantity
+from
+(Select dst.SalesTerritoryGroup, dst.SalesTerritoryCountry, dst.SalesTerritoryRegion, SUM(FIS.SalesAmount) as TotalInternetSales, SUM(FIS.TotalProductCost) AS TIProductCoast, SUM(FIS.SalesAmount - FIS.TotalProductCost) AS TIProfit,
+        Count(FIS.SalesOrderNumber) AS TIOrders, SUM(FIS.OrderQuantity) AS TIQuantity
+from        dbo.FactInternetSales FIS join DimSalesTerritory dst on FIS.SalesTerritoryKey = dst.SalesTerritoryKey
+group by dst.SalesTerritoryGroup, dst.SalesTerritoryCountry, dst.SalesTerritoryRegion) 
+AS A
+
+ 
+
+  Right JOIN
+
+ 
+
+(Select dst.SalesTerritoryGroup, dst.SalesTerritoryCountry, dst.SalesTerritoryRegion, SUM(FRS.SalesAmount) as TotalResellerSales, SUM(FRS.TotalProductCost) AS TRProductCoast, SUM(FRS.SalesAmount - FRS.TotalProductCost) AS TRProfit,
+        Count(FRS.SalesOrderNumber) AS TROrders, SUM(FRS.OrderQuantity) AS TRQuantity
+from        dbo.FactResellerSales FRS join DimSalesTerritory dst on FRS.SalesTerritoryKey = dst.SalesTerritoryKey
+            
+group by dst.SalesTerritoryGroup, dst.SalesTerritoryCountry, dst.SalesTerritoryRegion) 
+AS B
+on A.SalesTerritoryGroup = B.SalesTerritoryGroup
+group by B.SalesTerritoryGroup, B.SalesTerritoryCountry, B.SalesTerritoryRegion, TotalInternetSales, TotalResellerSales,TIProductCoast,TRProductCoast,TIOrders,TROrders, TIQuantity, TRQuantity
+order by B.SalesTerritoryGroup, B.SalesTerritoryCountry, B.SalesTerritoryRegion, TotalInternetSales, TotalResellerSales,TIProductCoast,TRProductCoast,TIOrders,TROrders, TIQuantity, TRQuantity
+
+--------------------------Q13 What are the sales by year by sales channels (internet, reseller & total)?-------------------
+
+Select  A.OrderDate As [Year], (IsNull(A.TotalInternetSales,0)+ IsNull(B.TotalResellerSales,0)) AS TotalSales , (IsNull(A.TotalInternetSales,0)) AS TotalSalesInternet, B.TotalResellerSales As TotalSaledReseller
+from
+(Select  year(FIS.OrderDate) As OrderDate, SUM(FIS.SalesAmount) as TotalInternetSales
+from        dbo.FactInternetSales FIS 
+group by year(FIS.OrderDate)) AS A
+
+
+ Full Outer JOIN
+
+
+(Select year(FRS.OrderDate) As OrderDate, SUM(FRS.SalesAmount) as TotalResellerSales
+from        dbo.FactResellerSales FRS 
+group by year(FRS.OrderDate)) AS B
+on A.OrderDate = B.OrderDate
+
+
+-------------DWQ14 What are the total sales by month (& year)?---------------------
+select dd.CalendarYear as [Year],dd.MonthNumberOfYear as [Month],(SUM(frs.salesAmount) + SUM(fis.salesAmount)) as Sales from FactResellerSales frs join FactInternetSales fis
+on frs.SalesTerritoryKey = fis.SalesTerritoryKey join
+DimDate dd on dd.DateKey = frs.OrderDateKey
+group by dd.CalendarYear,dd.MonthNumberOfYear
+order by dd.CalendarYear,dd.MonthNumberOfYear, Sales desc;
